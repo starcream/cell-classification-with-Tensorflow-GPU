@@ -74,10 +74,10 @@ conv1 = tf.layers.conv2d(
 # 78*78*32 -》 39*39*32
 pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 
-# conv2 & pool2 (39->13)
+# conv2 & pool2 (39*39*32->39*39*64)
 conv2 = tf.layers.conv2d(
     inputs=pool1,
-    filters=16,
+    filters=64,
     kernel_size=[5, 5],
     padding="same",
     activation=tf.nn.relu,
@@ -158,5 +158,5 @@ for epoch in range(n_epoch):
 sess.close()
 
 # how to save model and read from model
-# how to adjust learning rate while training
+# how to adjust learning rate while training  -- using AdamOptimizer
 # how to achieve data augmentation
