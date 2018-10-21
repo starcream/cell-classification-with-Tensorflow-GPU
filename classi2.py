@@ -1,4 +1,4 @@
-from skimage import io, transform
+﻿from skimage import io, transform
 import glob
 import os
 import tensorflow as tf
@@ -71,7 +71,7 @@ conv1 = tf.layers.conv2d(
     padding="same",
     activation=tf.nn.relu,
     kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-# 78*78*32 -》 39*39*32
+# 78*78*32 -> 39*39*32
 pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 
 # conv2 & pool2 (39*39*32->39*39*64)
@@ -82,6 +82,7 @@ conv2 = tf.layers.conv2d(
     padding="same",
     activation=tf.nn.relu,
     kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+# 39*39*64 -> 13*13*64
 pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=3)
 
 # conv3 & pool3 (13->5)
