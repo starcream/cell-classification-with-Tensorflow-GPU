@@ -8,7 +8,7 @@ val_path = 'D:\\DL_data\\validation\\'
 w = 78
 h = 78
 c = 1
-n_epoch = 140
+n_epoch = 60
 batch_size = 400
 
 # read data
@@ -17,81 +17,84 @@ x_train, y_train = read_img(train_path,w,h,c)
 print("reading validation set")
 x_val, y_val = read_img(val_path,w,h,c)
 
-# -----------------build network----------------------
-x = tf.placeholder(tf.float32, shape=[None, w, h, c], name='x')
-y_ = tf.placeholder(tf.int32, shape=[None, ], name='y_')
+with tf.name_scope('graph') as scope:
+    # -----------------build network----------------------
+    x = tf.placeholder(tf.float32, shape=[None, w, h, c], name='x')
+    y_ = tf.placeholder(tf.int32, shape=[None, ], name='y_')
 
-# conv 1& pool1（78*78*3 -> 78*78*32)
-conv1 = tf.layers.conv2d(
-    inputs=x,
-    filters=32,
-    kernel_size=[5, 5],
-    padding="same",
-    activation=tf.nn.relu,
-    kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-# 78*78*32 -> 39*39*32
-pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+    # conv 1& pool1（78*78*3 -> 78*78*32)
+    conv1 = tf.layers.conv2d(
+        inputs=x,
+        filters=32,
+        kernel_size=[5, 5],
+        padding="same",
+        activation=tf.nn.relu,
+        kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    # 78*78*32 -> 39*39*32
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 
-# conv2 & pool2 (39*39*32->39*39*64)
-conv2 = tf.layers.conv2d(
-    inputs=pool1,
-    filters=64,
-    kernel_size=[5, 5],
-    padding="same",
-    activation=tf.nn.relu,
-    kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-# 39*39*64 -> 13*13*64
-pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=3)
+    # conv2 & pool2 (39*39*32->39*39*64)
+    conv2 = tf.layers.conv2d(
+        inputs=pool1,
+        filters=64,
+        kernel_size=[5, 5],
+        padding="same",
+        activation=tf.nn.relu,
+        kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    # 39*39*64 -> 13*13*64
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=3)
 
-# conv3 & pool3 (13*13*64->10*10*128)
-conv3 = tf.layers.conv2d(
-    inputs=pool2,
-    filters=128,
-    kernel_size=[4, 4],
-    padding="valid",
-    activation=tf.nn.relu,
-    kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
-)
-# 10*10*128-> 5*5*128
-pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2)
+    # conv3 & pool3 (13*13*64->10*10*128)
+    conv3 = tf.layers.conv2d(
+        inputs=pool2,
+        filters=128,
+        kernel_size=[4, 4],
+        padding="valid",
+        activation=tf.nn.relu,
+        kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
+    )
+    # 10*10*128-> 5*5*128
+    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2)
 
-# dropout layer
-keep_prob = tf.placeholder(tf.float32,name = 'keep_prob')
-drop = tf.nn.dropout(pool3, keep_prob)
+    # dropout layer
+    keep_prob = tf.placeholder(tf.float32,name = 'keep_prob')
+    drop = tf.nn.dropout(pool3, keep_prob)
 
-re1 = tf.reshape(drop, [-1, 5 * 5 * 128])
+    re1 = tf.reshape(drop, [-1, 5 * 5 * 128])
 
-# fcn , L2 reg
-dense1 = tf.layers.dense(inputs=re1,
-                         units=1024,
-                         activation=tf.nn.relu,
-                         kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                         kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
-dense2 = tf.layers.dense(inputs=dense1,
-                         units=512,
-                         activation=tf.nn.relu,
-                         kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                         kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
-logits = tf.layers.dense(inputs=dense2,
-                         units=6,
-                         activation=None,
-                         kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                         kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
-# ---------------------------end of network---------------------------
+    # fcn , L2 reg
+    dense1 = tf.layers.dense(inputs=re1,
+                             units=1024,
+                             activation=tf.nn.relu,
+                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
+    dense2 = tf.layers.dense(inputs=dense1,
+                             units=512,
+                             activation=tf.nn.relu,
+                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
+    logits = tf.layers.dense(inputs=dense2,
+                             units=6,
+                             activation=None,
+                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
+    # ---------------------------end of network---------------------------
 
-loss = tf.losses.sparse_softmax_cross_entropy(labels=y_, logits=logits)
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=y_, logits=logits)
 
-train_op = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
+    train_op = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
-correct_prediction = tf.equal(tf.cast(tf.argmax(logits, 1), tf.int32), y_)
+    correct_prediction = tf.equal(tf.cast(tf.argmax(logits, 1), tf.int32), y_)
 
-acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),name='acc')
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),name='acc')
 
-saver = tf.train.Saver()
+    saver = tf.train.Saver()
+
 
 # train and validate
 
 sess = tf.InteractiveSession()
+writer = tf.summary.FileWriter(".\\logs\\", sess.graph)
 sess.run(tf.global_variables_initializer())
 for epoch in range(n_epoch):
     print("epoch : ", epoch)
