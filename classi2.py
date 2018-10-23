@@ -8,7 +8,7 @@ val_path = 'D:\\DL_data\\validation\\'
 w = 78
 h = 78
 c = 1
-n_epoch = 60
+n_epoch = 80
 batch_size = 400
 
 # read data
@@ -79,14 +79,15 @@ with tf.name_scope('graph') as scope:
                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
                              kernel_regularizer=tf.contrib.layers.l2_regularizer(0.003))
     # ---------------------------end of network---------------------------
-
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=y_, logits=logits)
-
+    with tf.name_scope('loss') as scope:
+        loss = tf.losses.sparse_softmax_cross_entropy(labels=y_, logits=logits)
+        tf.summary.scalar('loss', loss)
     train_op = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
     correct_prediction = tf.equal(tf.cast(tf.argmax(logits, 1), tf.int32), y_)
-
-    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),name='acc')
+    with tf.name_scope('acc') as scope:
+        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),name='acc')
+        tf.summary.scalar('acc',acc)
 
     saver = tf.train.Saver()
 
@@ -94,16 +95,24 @@ with tf.name_scope('graph') as scope:
 # train and validate
 
 sess = tf.InteractiveSession()
+
+merged = tf.summary.merge_all()
+
 writer = tf.summary.FileWriter(".\\logs\\", sess.graph)
+
 sess.run(tf.global_variables_initializer())
+
 for epoch in range(n_epoch):
     print("epoch : ", epoch)
     # training
     train_loss, train_acc, n_batch = 0, 0, 0
     for x_train_a, y_train_a in getbatch(x_train, y_train, batch_size, shuffle=True):
-        _, err, ac = sess.run([train_op, loss, acc], feed_dict={x: x_train_a,
+        summary,_, err, ac = sess.run([merged,train_op, loss, acc], feed_dict={
+                                                                x: x_train_a,
                                                                 y_: y_train_a,
                                                                 keep_prob: 0.5})
+        if n_batch == 0:
+            writer.add_summary(summary, epoch)
         train_loss += err
         train_acc += ac
         n_batch += 1
@@ -114,19 +123,20 @@ for epoch in range(n_epoch):
     if epoch % 20 == 19:
         val_loss, val_acc, n_batch = 0, 0, 0
         for x_val_a, y_val_a in getbatch(x_val, y_val, batch_size, shuffle=False):
-            err, ac = sess.run([loss, acc], feed_dict={x: x_val_a,
+            summary, err, ac = sess.run([merged, loss, acc], feed_dict={x: x_val_a,
                                                        y_: y_val_a,
                                                        keep_prob: 1.0})
+            if n_batch == 0:
+                writer.add_summary(summary, epoch)
             val_loss += err
             val_acc += ac
             n_batch += 1
         print("   validation loss: %f" % (val_loss / n_batch))
         print("   validation acc: %f" % (val_acc / n_batch))
 
-saver.save(sess, '.\\checkpoint_dir\\MyModel')
-
 sess.close()
 
 # how to save model and read from model       -- saver ,save & restore
 # how to adjust learning rate while training  -- using AdamOptimizer
 # how to employ data augmentation
+# how to visualize                            -- using tensorboard
